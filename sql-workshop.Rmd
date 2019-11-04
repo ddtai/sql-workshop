@@ -13,9 +13,9 @@ library(DBI)
 library(RMySQL)
 
 db_user <- 'admin'
-db_password <- 'testsql!'
-db_name <- 'oudb'
-db_host <- 'sqltest.clh43re5lq5h.us-east-1.rds.amazonaws.com'
+db_password <- 'testpass'
+db_name <- 'testdb'
+db_host <- 'sqltest.cytsfuy1xubh.us-east-2.rds.amazonaws.com'
 db_port <- 3306
 
 mydb <- dbConnect(MySQL(), user = db_user, password = db_password, dbname = db_name, host = db_host, port = db_port)
@@ -53,7 +53,10 @@ dbReadTable(mydb, 'studentInfo')
 
 #EXERCISE 1
 #Make two toy data sets with at least three variables and at least 30 rows each in them. Have a mix of numeric and character variables. Transfer these dataframes to your SQL database using the DBI commands. Name the tables whatever you like.
-
+toy1 <- data.frame(x = seq(1, 30, 1), y = runif(30, 0, 1), z = rnorm(30, 10, 2))
+toy2 <- data.frame(x = c(letters, 'aa', 'bb', 'cc', 'dd'), y = rexp(30, 1), z = runif(30, 10, 20))
+dbWriteTable(mydb, "toy1", toy1)
+dbWriteTable(mydb, "toy2", toy2)
 ```
 
 ## Getting into SQL - READING
@@ -81,9 +84,10 @@ dbGetQuery(mydb, "SELECT COUNT(*) FROM studentAssessment WHERE score > 50 AND id
 
 #EXERCISE 2
 #Read one of your toy data tables, make sure the output is ordered in descending order, you rename one of the variables and the output is limited to the first 20 rows.
+dbGetQuery(mydb, "SELECT y AS 'Random Uniform' FROM toy1 ORDER BY y DESC LIMIT 20;")
 
 #Read the other table according to a condition of one of the variables.
-
+dbGetQuery(mydb, "SELECT * FROM toy2 WHERE z > 15;")
 ```
 
 ## Getting into SQL - UPDATING
@@ -121,8 +125,14 @@ dbGetQuery(mydb, "SELECT * FROM studentAssessment ORDER BY id_student LIMIT 10;"
 
 #EXERCISE 3
 #Insert a new row in one of your toy data tables leaving one variable empty. Change one value in your other table. Display your new tables. Delete the row you edited and the row you inserted. 
-
-
+dbGetQuery(mydb, "INSERT INTO toy1 (x, y) VALUES (100, 50);")
+dbGetQuery(mydb, "UPDATE toy2 SET x = 'new' WHERE z > 18;")
+dbGetQuery(mydb, "SELECT * FROM toy1;")
+dbGetQuery(mydb, "SELECT * FROM toy2;")
+dbGetQuery(mydb, "DELETE FROM toy1 WHERE x = 100 AND y = 50;")
+dbGetQuery(mydb, "DELETE FROM toy2 WHERE x = 'new';")
+dbGetQuery(mydb, "SELECT * FROM toy1;")
+dbGetQuery(mydb, "SELECT * FROM toy2;")
 ```
 
 ## Add/Deleting Table
@@ -143,8 +153,9 @@ dbGetQuery(mydb, "INSERT INTO test VALUES ( 9, 'Frank' );")
 dbGetQuery(mydb, "SELECT * FROM test;")
 
 #Inserting a NULL row
-dbGetQuery(mydb, "INSERT INTO test DEFAULT VALUES;")
-
+# (will work in SQL, will not work in R)
+dbGetQuery(mydb, "INSERT INTO test DEFAULT VALUES;") 
+# (this will work)
 dbGetQuery(mydb,"INSERT INTO test (score, student) SELECT score, id_student FROM studentAssessment;")
 
 #Delete a table
@@ -157,7 +168,18 @@ dbGetQuery(mydb, "DROP TABLE IF EXISTS test;")
 
 #EXERCISE 4
 #Create a table that is exactly the same as your first toy data table but this time use SQL commands. Display your new table. Then delete the original table. 
-
+dbGetQuery(mydb,"CREATE TABLE toy1_copy (
+  x INTEGER, 
+  y INTEGER,
+  z INTEGER
+  );")
+dbListTables(mydb)
+dbGetQuery(mydb, "INSERT INTO toy1_copy VALUES ( 1, 2, 3 );")
+dbGetQuery(mydb, "INSERT INTO toy1_copy VALUES ( 4, 5, 6 );")
+dbGetQuery(mydb, "INSERT INTO toy1_copy VALUES ( 9, 8, 7 );")
+dbGetQuery(mydb, "SELECT * FROM toy1_copy;")
+dbGetQuery(mydb, "DROP TABLE IF EXISTS toy1_copy;")
+dbListTables(mydb)
 ```
 
 # NULL Value
@@ -194,6 +216,7 @@ dbGetQuery(mydb, "SELECT * FROM test2;")
 
 dbGetQuery(mydb, "DROP TABLE IF EXISTS test2;")
 
+#score must be Unique (accepts multiple NULL values)
 dbGetQuery(mydb,"CREATE TABLE test2 (
   score INTEGER UNIQUE, 
   student TEXT
@@ -209,8 +232,14 @@ dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 dbGetQuery(mydb,"INSERT INTO test2 (score, student) VALUES (NULL, 'A');")
 
 #EXERCISE 5
-#Recreate one of your toy data tables with the constraint that for one of the integer variablesthe default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
-
+#Recreate one of your toy data tables with the constraint that for one of the integer variables the default value will be zero. Test your table by inserting some empty values. Display your new tables. Then delete your table.  
+dbGetQuery(mydb, "CREATE TABLE toy3 (
+           x INTEGER DEFAULT 0,
+           y INTEGER,
+           z INTEGER);")
+dbGetQuery(mydb, "INSERT INTO toy3 (y, z) VALUES (33, 84);")
+dbGetQuery(mydb, "SELECT * FROM toy3;")
+dbGetQuery(mydb, "DROP TABLE IF EXISTS toy3;")
 ```
 
 
